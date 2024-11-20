@@ -35,6 +35,51 @@ return function()
 			store:destruct()
 		end)
 
+		it("should instantiate with a reducer, initial state, middlewares, and devtools", function()
+			local devtools = {}
+			devtools.__className = "Devtools"
+			function devtools:_hookIntoStore(store) end
+
+			local store = Store.new(function(state, action)
+				return state
+			end, "initial state", {}, nil, devtools)
+
+			expect(store).to.be.ok()
+			expect(store:getState()).to.equal("initial state")
+
+			store:destruct()
+		end)
+
+		it("should validate devtools argument", function()
+			local success, err = pcall(function()
+				Store.new(function(state, action)
+					return state
+				end, "initial state", {}, nil, "INVALID_DEVTOOLS")
+			end)
+
+			expect(success).to.equal(false)
+			expect(string.match(err, "Bad argument #5 to Store.new, expected nil or Devtools object.")).to.be.ok()
+		end)
+
+		it("should call devtools:_hookIntoStore", function()
+			local hooked = nil
+			local devtools = {}
+			devtools.__className = "Devtools"
+			function devtools:_hookIntoStore(store)
+				hooked = store
+			end
+
+			local store = Store.new(function(state, action)
+				return state
+			end, "initial state", {}, nil, devtools)
+
+			expect(store).to.be.ok()
+			expect(store:getState()).to.equal("initial state")
+			expect(hooked).to.equal(store)
+
+			store:destruct()
+		end)
+
 		it("should modify the dispatch method when middlewares are passed", function()
 			local middlewareInstantiateCount = 0
 			local middlewareInvokeCount = 0
@@ -169,11 +214,13 @@ return function()
 			expect(caughtState.Value).to.equal(1)
 			expect(caughtAction.type).to.equal("@@INIT")
 			expect(caughtErrorResult.message).to.equal("Caught error in reducer with init")
-			expect(string.find(caughtErrorResult.thrownValue, innerErrorMessage)).to.be.ok()
+			local found = string.find(caughtErrorResult.thrownValue, innerErrorMessage)
+			expect(found).to.be.ok()
 			-- We want to verify that this is a stacktrace without caring too
 			-- much about the format, so we look for the stack frame associated
 			-- with this test file
-			expect(string.find(caughtErrorResult.thrownValue, script.Name)).to.be.ok()
+			found = string.find(caughtErrorResult.thrownValue, script.Name)
+			expect(found).to.be.ok()
 
 			store:destruct()
 		end)
@@ -218,11 +265,13 @@ return function()
 			expect(caughtState.Value).to.equal(2)
 			expect(caughtAction.type).to.equal("ThrowError")
 			expect(caughtErrorResult.message).to.equal("Caught error in reducer")
-			expect(string.find(caughtErrorResult.thrownValue, innerErrorMessage)).to.be.ok()
+			local found = string.find(caughtErrorResult.thrownValue, innerErrorMessage)
+			expect(found).to.be.ok()
 			-- We want to verify that this is a stacktrace without caring too
 			-- much about the format, so we look for the stack frame associated
 			-- with this test file
-			expect(string.find(caughtErrorResult.thrownValue, script.Name)).to.be.ok()
+			found = string.find(caughtErrorResult.thrownValue, script.Name)
+			expect(found).to.be.ok()
 
 			store:destruct()
 		end)
@@ -396,14 +445,16 @@ return function()
 			-- We want to verify that this is a stacktrace without caring too
 			-- much about the format, so we look for the stack frame associated
 			-- with this test file
-			expect(string.find(reportedErrorError, script.Name)).to.be.ok()
+			local found = string.find(reportedErrorError, script.Name)
+			expect(found).to.be.ok()
 			-- In vanilla lua, we get this message:
 			--   "attempt to yield across metamethod/C-call boundary"
 			-- In luau, we should end up wrapping our own NoYield message:
 			--   "Attempted to yield inside changed event!"
 			-- For convenience's sake, we just look for the common substring
 			local caughtErrorSubstring = "to yield"
-			expect(string.find(reportedErrorError, caughtErrorSubstring)).to.be.ok()
+			found = string.find(reportedErrorError, caughtErrorSubstring)
+			expect(found).to.be.ok()
 
 			store:destruct()
 		end)
@@ -479,7 +530,8 @@ return function()
 			-- We want to verify that this is a stacktrace without caring too
 			-- much about the format, so we look for the stack frame associated
 			-- with this test file
-			expect(string.find(caughtErrorResult.thrownValue, script.Name)).to.be.ok()
+			local found = string.find(caughtErrorResult.thrownValue, script.Name)
+			expect(found).to.be.ok()
 
 			expect(caughtActionLog[1]).to.equal(actions[1])
 			expect(caughtActionLog[2]).to.equal(actions[2])
